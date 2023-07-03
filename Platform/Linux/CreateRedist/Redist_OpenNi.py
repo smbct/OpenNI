@@ -31,8 +31,7 @@ import re
 import sys
 import shutil
 import stat
-from commands import getoutput as gop
-
+import os
 #-------------Functions--------------------------------------------------------#
 
 def calc_jobs_number():
@@ -40,9 +39,9 @@ def calc_jobs_number():
 	
     try:
         if ostype == "Darwin":
-            txt = gop('sysctl -n hw.physicalcpu')
+            txt = os.popen('sysctl -n hw.physicalcpu').read()
         else:		
-            txt = gop('grep "processor\W:" /proc/cpuinfo | wc -l')
+            txt = os.popen('grep "processor\W:" /proc/cpuinfo | wc -l').read()
 			
         cores = int(txt)
     except:
@@ -158,8 +157,8 @@ def execute_check(cmd, name):
     "Executes command and checks the return code. If it's not 0, stops redist."
     ret = os.system(cmd)
     if ret != 0:
-        print "failed to execute: " + cmd
-        print name + " Failed!"
+        print("failed to execute: " + cmd)
+        print(name + " Failed!")
         logger.critical(name + " Failed!")
         finish_script(1)
         
@@ -186,7 +185,7 @@ else:
     elif machinetype[:3] == "arm":
         PLATFORM = "Arm"
     else:
-        print "Unknown platform:", machinetype
+        print("Unknown platform:", machinetype)
         finish_script(1)
 
     MAKE_ARGS = ''
@@ -214,15 +213,15 @@ logger.addHandler(hdlr)
 logger.setLevel(logging.INFO)
 
 #------------Welcome Messege--------=------------------------------------------#
-print "\n";
-print "*********************************"
-print "*   PrimeSense OpenNI Redist    *"
-print "*     " + DateTimeSTR + "       *"
-print "*********************************"
-print
+print("\n");
+print("*********************************")
+print("*   PrimeSense OpenNI Redist    *")
+print("*     " + DateTimeSTR + "       *")
+print("*********************************")
+print("\n")
 logger.info("PrimeSense OpenNI Redist Started")
 
-print "Target:", TARGET
+print("Target:", TARGET)
 
 #--------------Take Version----------------------------------------------------#
 version_file = open("../../../Include/XnVersion.h").read()
@@ -232,14 +231,14 @@ maintenance = re.search(r"define XN_MAINTENANCE_VERSION (\d+)", version_file).gr
 build = re.search(r"define XN_BUILD_VERSION (\d+)", version_file).groups()[0]
 
 version = major + "." + minor + "." + maintenance + "." + build
-print "Version:", version
+print("Version:", version)
 
-print "Num of compile jobs:", calc_jobs_number()
+print("Num of compile jobs:", calc_jobs_number())
 
-print
+print('\n')
 
 #--------------Build Project---------------------------------------------------#
-print "* Building OpenNI..."
+print("* Building OpenNI...")
 logger.info("Building OpenNI...")
 
 # Build
@@ -248,7 +247,7 @@ execute_check('make ' + MAKE_ARGS + ' -C ' + SCRIPT_DIR + '/../Build clean > ' +
 execute_check('make ' + MAKE_ARGS + ' -C ' + SCRIPT_DIR + '/../Build > ' + SCRIPT_DIR + '/Output/Build' + PROJECT_NAME + '.txt', 'Building')
 
 #--------------Doxygen---------------------------------------------------------#
-print "* Creating Doxygen..."
+print("* Creating Doxygen...")
 logger.info("Creating DoxyGen...")
 os.chdir("../../../Source/DoxyGen");
 if os.path.exists("html"):
@@ -261,7 +260,7 @@ execute_check("doxygen Doxyfile > "+ SCRIPT_DIR + "/Output/EngineDoxy.txt", "Cre
 os.system("rm -rf html/*.map html/*.md5 html/*.hhc html/*.hhk html/*.hhp")
 
 #-------------Create Redist Dir------------------------------------------------#
-print "* Creating Redist Dir..."
+print("* Creating Redist Dir...")
 logger.info("Creating Redist Dir...")
 os.chdir(SCRIPT_DIR + "/..")
 
@@ -289,7 +288,7 @@ os.makedirs(REDIST_DIR + "/Samples/Config")
 os.makedirs(REDIST_DIR + "/Samples/Res")
 
 #-------------Copy files to redist---------------------------------------------#
-print "* Copying files to redist dir..."
+print("* Copying files to redist dir...")
 logger.info("Copying files to redist dir...")
 
 #license
@@ -358,7 +357,7 @@ if (MonoDetected == 0):
     samples_list.remove("SimpleViewer.net")
     samples_list.remove("UserTracker.net")
 
-print "Samples:", samples_list
+print("Samples:", samples_list)
 
 for sample in samples_list:
     shutil.copytree("../../Samples/" + sample, REDIST_DIR + "/Samples/" + sample)
@@ -381,17 +380,19 @@ os.system("find " + REDIST_DIR + "/. | grep .svn | xargs rm -rf")
 os.system("find " + REDIST_DIR + "/Samples/. | grep .svn | xargs rm -rf")
 
 #-----Remove Read Only Attrib--------------------------------------------------#
-print "* Removing Read Only Attributes..."
+print("* Removing Read Only Attributes...")
 logger.info("Removing Read Only Attributes...")
 os.system ("chmod -R +r " + REDIST_DIR + "/*")
 
 #--------Fixing Files----------------------------------------------------------#
-print "* Fixing Files..."
+print("* Fixing Files...")
 logger.info("Fixing Files...")
-os.path.walk(REDIST_DIR + "/Samples",fix_file,'')
+
+for directory, dirnames, filenames in os.walk(REDIST_DIR + "/Samples"):
+    fix_file('', directory, filenames)
 
 #-------Creating project and solutions-----------------------------------------#
-print "* Creating Makefile..."
+print("* Creating Makefile...")
 logger.info("Creating Makefile...")
 
 MAKEFILE = open(REDIST_DIR + "/Samples/Build/Makefile", 'w')
@@ -421,19 +422,19 @@ for sample in samples_list:
 MAKEFILE.close()
 
 #-------Copy install script---------------------------------------------------#
-print "* Copying install script..."
+print("* Copying install script...")
 logger.info("Copying install script...")
 
 copy_install_script(PLATFORM, "CreateRedist/install.sh", REDIST_DIR)
 
 #-------------Build Samples---------------------------------------------------#
-print "* Building Samples in release configuration......"
+print("* Building Samples in release configuration......")
 logger.info("Building Samples in release configuration...")
 
 # Build project solution
 execute_check("make " + MAKE_ARGS + " -C " + REDIST_DIR + "/Samples/Build " + " > "+SCRIPT_DIR+"/Output/BuildSmpRelease.txt", "Build samples in release")
 
-print "* Building Samples in debug configuration......"
+print("* Building Samples in debug configuration......")
 logger.info("Building Samples in debug configuration...")
 
 # Build project solution
@@ -445,7 +446,7 @@ for sample in samples_list:
    os.system("rm -rf " + REDIST_DIR + "/Samples/"+sample+"/" + PLATFORM + "/Release")
 
 #-------------Create TAR-------------------------------------------------------#
-print "* Creating tar......"
+print("* Creating tar......")
 logger.info("Creating tar...")
 
 os.makedirs(SCRIPT_DIR+"/Final")
@@ -456,7 +457,7 @@ execute_check("tar -cjf " +SCRIPT_DIR+"/Final/" + REDIST_NAME + ".tar.bz2 " + RE
 os.chdir(SCRIPT_DIR)
 
 #-------------CleanUP----------------------------------------------------------#
-print "* Redist OpenNi Ended.   !!"
+print("* Redist OpenNi Ended.   !!")
 logger.info("Redist OpenNi Ended.")
 finish_script(0)
 

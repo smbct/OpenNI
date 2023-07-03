@@ -28,7 +28,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("PrimeSense Ltd.")]
 [assembly: AssemblyProduct("OpenNI")]
-[assembly: AssemblyCopyright("Copyright © PrimeSense 2010")]
+[assembly: AssemblyCopyright("Copyright Â© PrimeSense 2010")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
