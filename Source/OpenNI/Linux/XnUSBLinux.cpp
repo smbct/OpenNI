@@ -398,6 +398,20 @@ XN_C_API XnStatus xnUSBOpenDeviceImpl(libusb_device* pDevice, XN_USB_DEV_HANDLE*
 		return (XN_STATUS_USB_SET_CONFIG_FAILED);
 	}
 */	
+
+	// this is necesary to run the library inside a container, otherwise the device is detected as busy
+	// taken from libfreenect source code
+	rc = libusb_kernel_driver_active(handle, 0);
+	if (rc == 1)
+	{
+		rc = libusb_detach_kernel_driver(handle, 0);
+		if (rc < 0)
+		{
+			libusb_close(handle);
+			return (XN_STATUS_USB_SET_INTERFACE_FAILED);
+		}
+	}
+
 	// claim the interface (you cannot open any end point before claiming the interface)
 	rc = libusb_claim_interface(handle, 0);
 	if (rc != 0)
