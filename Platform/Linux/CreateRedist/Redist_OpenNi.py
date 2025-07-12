@@ -41,13 +41,14 @@ def calc_jobs_number():
         if ostype == "Darwin":
             txt = os.popen('sysctl -n hw.physicalcpu').read()
         else:		
-            txt = os.popen('grep "processor\W:" /proc/cpuinfo | wc -l').read()
+            txt = os.popen('cat /proc/cpuinfo | grep -m1 "cores\\W:" | grep -Eo \'[0-9]{1,4}\'').read()
 			
         cores = int(txt)
     except:
         pass
        
-    return str(cores * 2)
+    return str(cores)
+
 
 def finish_script(exit_code):
     os.chdir(SCRIPT_DIR)
@@ -87,8 +88,8 @@ def check_sample(sample_dir):
         rc=0
         return rc
     redist_lines =redistFile.readlines()
-    skip_re = re.compile("^SKIP=([^\|]*\|)*(" + PLATFORM + "|ALL)(\|[^\|]*)*$")
-    tool_re = re.compile("^TOOL=([^\|]*\|)*(" + PLATFORM + "|ALL)(\|[^\|]*)*$")
+    skip_re = re.compile("^SKIP=([^\\|]*\\|)*(" + PLATFORM + "|ALL)(\\|[^\\|]*)*$")
+    tool_re = re.compile("^TOOL=([^\\|]*\\|)*(" + PLATFORM + "|ALL)(\\|[^\\|]*)*$")
     for line in redist_lines:
         if skip_re.search(line):
             rc = 1
